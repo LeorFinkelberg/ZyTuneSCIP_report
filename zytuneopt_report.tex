@@ -1,0 +1,497 @@
+\documentclass[%
+	11pt,
+	a4paper,
+	utf8,
+	%twocolumn
+		]{article}	
+
+\usepackage{style_packages/podvoyskiy_article_extended}
+
+
+\begin{document}
+\title{Пояснительная записка\\{\large к модулю подбора метаконфигураций решателя SCIP \\для MILP-проблем с <<короткой итерацией>>}}
+
+\author{\itshape Подвойский А.О}
+
+
+\date{}
+\maketitle
+
+\thispagestyle{fancy}
+
+%Здесь приводятся заметки по специальным вопросам теории оптимизации
+
+%\shorttableofcontents{Краткое содержание}{1}
+
+\tableofcontents
+
+\section{Вводные замечания}
+
+Подбор стратегии поиска решения и гиперпараметров решателя имеет смысл только для MILP-проблем с <<короткой итерацией>>, то есть для проблем, у которых полное время поиска решения не превосходит некоторого порога времени, считающегося приемлемым временем ожидания (например, 30 секунд).
+
+Запуск решателя SCIP с различными комбинациями параметров выполняется параллельно. Фиксируется время поиска решения до достижения заданного значения зазора и значение целевой функции.
+
+Результаты сводятся в таблицу со следующими полями:
+\begin{itemize}
+	\item наименование проблемы (\verb|problem_name|),
+	
+	\item количество бинарных переменных до пресолвинга (\verb|n_bin_vars_before_presolving|),
+	
+	\item количество целочисленных переменных до пресолвинга (\verb|n_int_vars_before_presolving|),
+	
+	\item количество вещественных переменных до пресолвинга (\verb|n_cont_vars_before_presolving|),
+	
+	\item количество ограничений до пресолвинга (\verb|n_conss_before_presolving|),
+	
+	\item количество бинарных переменных после пресолвинга (\verb|n_bin_vars_after_presolving|),
+	
+	\item количество целочисленных переменных после пресолвинга (\verb|n_int_vars_after_presolving|),
+	
+	\item количество вещественных переменных после пресолвинга (\verb|n_cont_vars_after_presolving|),
+	
+	\item количество ограничений после пресолвинга (\verb|n_conss_after_presolving|),
+	
+	\item группа гиперпараметров снижения размерности задачи (\verb|group_presolving|); допустимые значения \verb|default|, \verb|aggressive| и \verb|fast|,
+	
+	\item группа гиперпараметров решения проблемы в релаксированной постановке (\verb|group_relax_method|),
+	
+	\item группа гиперпараметров адаптации проблемы (\verb|group_adaptation_problem|),
+	
+	\item группа гиперпараметров точности решения (\verb|group_tol|)
+\end{itemize}
+
+\section{Предложения по формированию пространства гиперпараметров решателя}
+
+Не все гиперпараметры решателя имеет смысл подбирать <<изолировано>>. К примеру, следующий набор гиперпараметров с указанными значениями имеет смысл только для \emph{агрессивного пресолвинга}
+\begin{lstlisting}[
+style = bash,
+numbers = none
+]
+presolving/restartfac = 0.0125
+presolving/restartminred = 0.06
+constraints/setppc/cliquelifting = TRUE
+presolving/boundshift/maxrounds = -1
+presolving/qpkktref/maxrounds = -1
+presolving/stuffing/maxrounds = -1
+presolving/tworowbnd/maxrounds = -1
+presolving/dualinfer/maxrounds = -1
+presolving/dualagg/maxrounds = -1
+presolving/redvub/maxrounds = -1
+propagating/probing/maxuseless = 1500
+propagating/probing/maxtotaluseless = 75
+\end{lstlisting}
+
+Таким образом, предлагается выделить следующие группы гиперпараметров решателя, объединенные по целевому контексту:
+\begin{enumerate}
+	\item \emph{Группа гиперпараметров снижения размерности задачи} (\verb|presolving|):
+	\begin{itemize}
+		\item По умолчанию (\verb|DEFAULT|)
+\begin{lstlisting}[
+style = ironpython,
+numbers = none
+]
+# PySCIPOpt
+model.setPresolve(pyscipopt.SCIP_PARAMSETTING.DEFAULT)
+\end{lstlisting}
+		
+		\item Агрессивное (\verb|AGGRESSIVE|)
+\begin{lstlisting}[
+style = ironpython,
+numbers = none
+]
+# PySCIPOpt
+model.setPresolve(pyscipopt.SCIP_PARAMSETTING.AGGRESSIVE)
+\end{lstlisting}
+\begin{lstlisting}[
+style = bash,
+numbers = none
+]
+# ЗНАЧЕНИЯ ПАРАМЕТРОВ НЕ ИЗМЕНЯЮТСЯ
+# SCIP> set presolving emphasis aggr
+presolving/restartfac = 0.0125
+presolving/restartminred = 0.06
+constraints/setppc/cliquelifting = TRUE
+presolving/boundshift/maxrounds = -1
+presolving/qpkktref/maxrounds = -1
+presolving/stuffing/maxrounds = -1
+presolving/tworowbnd/maxrounds = -1
+presolving/dualinfer/maxrounds = -1
+presolving/dualagg/maxrounds = -1
+presolving/redvub/maxrounds = -1
+propagating/probing/maxuseless = 1500
+propagating/probing/maxtotaluseless = 75
+\end{lstlisting}
+		    \item Быстрое (\verb|FAST|)
+\begin{lstlisting}[
+style = ironpython,
+numbers = none
+]
+# PySCIPOpt
+model.setPresolve(pyscipopt.SCIP_PARAMSETTING.FAST)
+\end{lstlisting}
+\begin{lstlisting}[
+style = bash,
+numbers = none
+]
+# ЗНАЧЕНИЯ ПАРАМЕТРОВ НЕ ИЗМЕНЯЮТСЯ
+# SCIP> set presolving emphasis fast
+constraints/varbound/presolpairwise = FALSE
+constraints/knapsack/presolpairwise = FALSE
+constraints/setppc/presolpairwise = FALSE
+constraints/and/presolpairwise = FALSE
+constraints/xor/presolpairwise = FALSE
+constraints/linear/presolpairwise = FALSE
+constraints/logicor/presolpairwise = FALSE
+constraints/cumulative/presolpairwise = FALSE
+presolving/maxrestarts = 0
+propagating/probing/maxprerounds = 0
+constraints/components/maxprerounds = 0
+presolving/domcol/maxrounds = 0
+presolving/gateextraction/maxrounds = 0
+presolving/sparsify/maxrounds = 0
+presolving/dualsparsify/maxrounds = 0
+constraints/logicor/implications = FALSE
+\end{lstlisting}
+	\end{itemize}
+
+    \item \emph{Группа гиперпараметров решения проблемы в релаксированной постановке}
+\begin{lstlisting}[
+numbers = none
+]
+lp/initalgorithm = s'implex  # default
+                 = p'rimal simplex
+                 = d'ual simplex
+                 = b'arrier
+                 = barrier with c'rossover
+randomization/lpseed = 0  # default
+\end{lstlisting}
+
+    \item \emph{Группа гиперпараметров ветвления и разрешения конфликтов}
+\begin{lstlisting}[
+style = bash,
+numbers = none
+]
+# Эти параметры <<включаются>> и <<выключаются>> только в паре
+conflict/preferbinary = TRUE | FALSE
+branching/preferbinary = TRUE | FALSE
+\end{lstlisting}
+
+    \item \emph{Группа гиперпараметров адаптации проблемы}
+    \begin{itemize}
+    	\item \verb|easycip|
+\begin{lstlisting}[
+style = bash,
+numbers = none
+]
+# ЗНАЧЕНИЯ ПАРАМЕТРОВ НЕ ИЗМЕНЯЮТСЯ
+# PySCIPOpt: model.setEmphasis(pyscipopt.SCIP_PARAMEMPHASIS.EASYCIP)
+# SCIP> set emph easycip
+# predefined parameter settings for easy problems
+heuristics/clique/freq = -1
+heuristics/completesol/freq = -1
+heuristics/crossover/freq = -1
+heuristics/gins/freq = -1
+heuristics/locks/freq = -1
+heuristics/lpface/freq = -1
+heuristics/alns/freq = -1
+heuristics/multistart/freq = -1
+heuristics/mpec/freq = -1
+heuristics/ofins/freq = -1
+heuristics/padm/freq = -1
+heuristics/rens/freq = -1
+heuristics/rins/freq = -1
+heuristics/undercover/freq = -1
+heuristics/vbounds/freq = -1
+heuristics/distributiondiving/freq = -1
+heuristics/feaspump/freq = -1
+heuristics/fracdiving/freq = -1
+heuristics/guideddiving/freq = -1
+heuristics/linesearchdiving/freq = -1
+heuristics/nlpdiving/freq = -1
+heuristics/subnlp/freq = -1
+heuristics/objpscostdiving/freq = -1
+heuristics/pscostdiving/freq = -1
+heuristics/rootsoldiving/freq = -1
+heuristics/veclendiving/freq = -1
+constraints/varbound/presolpairwise = FALSE
+constraints/knapsack/presolpairwise = FALSE
+constraints/setppc/presolpairwise = FALSE
+constraints/and/presolpairwise = FALSE
+constraints/xor/presolpairwise = FALSE
+constraints/linear/presolpairwise = FALSE
+constraints/logicor/presolpairwise = FALSE
+constraints/cumulative/presolpairwise = FALSE
+presolving/maxrestarts = 0
+propagating/probing/maxprerounds = 0
+constraints/components/maxprerounds = 0
+presolving/domcol/maxrounds = 0
+presolving/gateextraction/maxrounds = 0
+presolving/sparsify/maxrounds = 0
+presolving/dualsparsify/maxrounds = 0
+constraints/logicor/implications = FALSE
+separating/maxbounddist = 0
+constraints/and/sepafreq = 0
+separating/aggregation/maxroundsroot = 5
+separating/aggregation/maxtriesroot = 100
+separating/aggregation/maxaggrsroot = 3
+separating/aggregation/maxsepacutsroot = 200
+separating/zerohalf/maxsepacutsroot = 200
+separating/zerohalf/maxroundsroot = 5
+separating/gomory/maxroundsroot = 20
+separating/mcf/freq = -1
+\end{lstlisting}
+
+    \item \verb|feasibility|
+\begin{lstlisting}[
+style = bash,
+numbers = none
+]
+# ЗНАЧЕНИЯ ПАРАМЕТРОВ НЕ ИЗМЕНЯЮТСЯ
+# PySCIPOpt: model.setEmphasis(pyscipopt.SCIP_PARAMEMPHASIS.FEASIBILITY)
+# SCIP> set emph feas
+# predefined parameter settings for feasibility problems
+heuristics/actconsdiving/freq = 20
+heuristics/adaptivediving/freq = 3
+heuristics/adaptivediving/maxlpiterquot = 0.15
+heuristics/bound/freq = 20
+heuristics/clique/freq = 20
+heuristics/coefdiving/freq = 20
+heuristics/completesol/freq = 20
+heuristics/conflictdiving/freq = 5
+heuristics/conflictdiving/maxlpiterofs = 1500
+heuristics/conflictdiving/maxlpiterquot = 0.225
+heuristics/crossover/freq = 15
+heuristics/dins/freq = 20
+heuristics/distributiondiving/freq = 5
+heuristics/distributiondiving/maxlpiterofs = 1500
+heuristics/distributiondiving/maxlpiterquot = 0.075
+heuristics/dps/freq = 20
+heuristics/farkasdiving/freq = 5
+heuristics/farkasdiving/maxlpiterofs = 1500
+heuristics/farkasdiving/maxlpiterquot = 0.075
+heuristics/feaspump/freq = 10
+heuristics/feaspump/maxlpiterofs = 1500
+heuristics/feaspump/maxlpiterquot = 0.015
+heuristics/fixandinfer/freq = 20
+heuristics/fracdiving/freq = 5
+heuristics/fracdiving/maxlpiterofs = 1500
+heuristics/fracdiving/maxlpiterquot = 0.075
+heuristics/gins/freq = 10
+heuristics/guideddiving/freq = 5
+heuristics/guideddiving/maxlpiterofs = 1500
+heuristics/guideddiving/maxlpiterquot = 0.075
+heuristics/zeroobj/freq = 20
+heuristics/intdiving/freq = 20
+heuristics/intshifting/freq = 5
+heuristics/linesearchdiving/freq = 5
+heuristics/linesearchdiving/maxlpiterofs = 1500
+heuristics/linesearchdiving/maxlpiterquot = 0.075
+heuristics/localbranching/freq = 20
+heuristics/locks/freq = 20
+heuristics/lpface/freq = 8
+heuristics/alns/freq = 10
+heuristics/nlpdiving/freq = 5
+heuristics/mutation/freq = 20
+heuristics/multistart/freq = 20
+heuristics/mpec/freq = 25
+heuristics/objpscostdiving/freq = 10
+heuristics/objpscostdiving/maxlpiterofs = 1500
+heuristics/objpscostdiving/maxlpiterquot = 0.015
+heuristics/octane/freq = 20
+heuristics/ofins/freq = 20
+heuristics/padm/freq = 20
+heuristics/proximity/freq = 20
+heuristics/pscostdiving/freq = 5
+heuristics/pscostdiving/maxlpiterofs = 1500
+heuristics/pscostdiving/maxlpiterquot = 0.075
+heuristics/randrounding/freq = 10
+heuristics/rens/freq = 20
+heuristics/reoptsols/freq = 20
+heuristics/repair/freq = 20
+heuristics/rins/freq = 13
+heuristics/rootsoldiving/freq = 10
+heuristics/rootsoldiving/maxlpiterofs = 1500
+heuristics/rootsoldiving/maxlpiterquot = 0.015
+heuristics/shiftandpropagate/freq = 20
+heuristics/shifting/freq = 5
+heuristics/trivial/freq = 20
+heuristics/trivialnegation/freq = 20
+heuristics/trustregion/freq = 20
+heuristics/twoopt/freq = 20
+heuristics/undercover/freq = 20
+heuristics/vbounds/freq = 20
+heuristics/veclendiving/freq = 5
+heuristics/veclendiving/maxlpiterofs = 1500
+heuristics/veclendiving/maxlpiterquot = 0.075
+heuristics/rens/nodesofs = 2000
+heuristics/rens/minfixingrate = 0.3
+heuristics/crossover/nwaitingnodes = 20
+heuristics/crossover/dontwaitatroot = TRUE
+heuristics/crossover/nodesquot = 0.15
+heuristics/crossover/minfixingrate = 0.5
+heuristics/alns/trustregion/active = TRUE
+heuristics/alns/nodesquot = 0.2
+heuristics/alns/nodesofs = 2000
+separating/maxrounds = 1
+separating/maxroundsroot = 5
+separating/aggregation/freq = -1
+separating/mcf/freq = -1
+nodeselection/restartdfs/stdpriority = 536870911
+\end{lstlisting}
+
+    \item \verb|optimality|
+\begin{lstlisting}[
+style = bash,
+numbers = none
+]
+# ЗНАЧЕНИЯ ПАРАМЕТРОВ НЕ ИЗМЕНЯЮТСЯ
+# PySCIPOpt: model.setEmphasis(pyscipopt.SCIP_PARAMEMPHASIS.OPTIMALITY)
+# SCIP> set emph opt
+# predefined parameter settings for proving optimality fast
+separating/closecuts/freq = 0
+separating/rlt/freq = 20
+separating/rlt/maxroundsroot = 15
+separating/disjunctive/freq = 20
+separating/disjunctive/maxroundsroot = 150
+separating/gauge/freq = 0
+separating/interminor/freq = 0
+separating/convexproj/freq = 0
+separating/gomory/maxroundsroot = 15
+separating/gomory/maxsepacutsroot = 400
+separating/aggregation/maxsepacutsroot = 1000
+separating/clique/freq = 20
+separating/zerohalf/maxroundsroot = 30
+separating/zerohalf/maxsepacutsroot = 200
+separating/mcf/freq = 20
+separating/mcf/maxsepacutsroot = 400
+separating/eccuts/freq = 0
+separating/eccuts/maxroundsroot = 375
+separating/eccuts/maxsepacutsroot = 100
+separating/oddcycle/freq = 0
+separating/oddcycle/maxroundsroot = 15
+separating/oddcycle/maxsepacutsroot = 10000
+constraints/benderslp/sepafreq = 0
+constraints/integral/sepafreq = 0
+constraints/SOS2/sepafreq = 10
+constraints/varbound/sepafreq = 10
+constraints/knapsack/sepafreq = 10
+constraints/knapsack/maxsepacutsroot = 500
+constraints/setppc/sepafreq = 10
+constraints/or/sepafreq = 10
+constraints/xor/sepafreq = 10
+constraints/conjunction/sepafreq = 0
+constraints/disjunction/sepafreq = 0
+constraints/linear/sepafreq = 10
+constraints/linear/maxsepacutsroot = 500
+constraints/orbitope/sepafreq = 0
+constraints/logicor/sepafreq = 10
+constraints/bounddisjunction/sepafreq = 0
+constraints/benders/sepafreq = 0
+constraints/pseudoboolean/sepafreq = 0
+constraints/superindicator/sepafreq = 0
+constraints/countsols/sepafreq = 0
+constraints/components/sepafreq = 0
+cutselection/hybrid/minorthoroot = 0.1
+separating/maxroundsrootsubrun = 5
+separating/maxaddrounds = 5
+separating/maxcutsroot = 5000
+constraints/linear/separateall = TRUE
+separating/aggregation/maxfailsroot = 200
+separating/mcf/maxtestdelta = -1
+separating/mcf/trynegscaling = TRUE
+branching/fullstrong/maxdepth = 10
+branching/fullstrong/priority = 536870911
+branching/fullstrong/maxbounddist = 0
+branching/relpscost/sbiterquot = 1
+branching/relpscost/sbiterofs = 1000000
+branching/relpscost/maxreliable = 10
+branching/relpscost/usehyptestforreliability = TRUE
+\end{lstlisting}
+
+    \item \verb|hardlp|
+\begin{lstlisting}[
+style = bash,
+numbers = none
+]
+# ЗНАЧЕНИЯ ПАРАМЕТРОВ НЕ ИЗМЕНЯЮТСЯ
+# PySCIPOpt: model.setEmphasis(pyscipopt.SCIP_PARAMEMPHASIS.HARDLP)
+# SCIP> set emph hardlp
+# predefined parameter settings for problems with a hard LP
+heuristics/clique/freq = -1
+heuristics/completesol/freq = -1
+heuristics/crossover/freq = -1
+heuristics/gins/freq = -1
+heuristics/locks/freq = -1
+heuristics/lpface/freq = -1
+heuristics/alns/freq = -1
+heuristics/multistart/freq = -1
+heuristics/mpec/freq = -1
+heuristics/ofins/freq = -1
+heuristics/padm/freq = -1
+heuristics/rens/freq = -1
+heuristics/rins/freq = -1
+heuristics/undercover/freq = -1
+heuristics/vbounds/freq = -1
+heuristics/distributiondiving/freq = -1
+heuristics/feaspump/freq = -1
+heuristics/fracdiving/freq = -1
+heuristics/guideddiving/freq = -1
+heuristics/linesearchdiving/freq = -1
+heuristics/nlpdiving/freq = -1
+heuristics/subnlp/freq = -1
+heuristics/objpscostdiving/freq = -1
+heuristics/pscostdiving/freq = -1
+heuristics/rootsoldiving/freq = -1
+heuristics/veclendiving/freq = -1
+constraints/varbound/presolpairwise = FALSE
+constraints/knapsack/presolpairwise = FALSE
+constraints/setppc/presolpairwise = FALSE
+constraints/and/presolpairwise = FALSE
+constraints/xor/presolpairwise = FALSE
+constraints/linear/presolpairwise = FALSE
+constraints/logicor/presolpairwise = FALSE
+constraints/cumulative/presolpairwise = FALSE
+presolving/maxrestarts = 0
+propagating/probing/maxprerounds = 0
+constraints/components/maxprerounds = 0
+presolving/domcol/maxrounds = 0
+presolving/gateextraction/maxrounds = 0
+presolving/sparsify/maxrounds = 0
+presolving/dualsparsify/maxrounds = 0
+constraints/logicor/implications = FALSE
+branching/relpscost/maxreliable = 1
+branching/relpscost/inititer = 10
+separating/maxrounds = 1
+separating/maxroundsroot = 5
+\end{lstlisting}
+    \end{itemize}
+    \item \emph{Группа гиперпараметров точности решения (для численно нестабильных проблем)}
+\begin{lstlisting}[
+style = bash,
+numbers = none
+]
+numerics/feastol = 1e-05
+numerics/dualfeastol = 1e-06
+numerics/epsilon = 1e-07
+numerics/sumepsilon = 1e-05
+\end{lstlisting}
+\end{enumerate}
+
+
+
+
+
+
+\newpage
+\listoffigures\addcontentsline{toc}{section}{Список иллюстраций}
+
+% \listoftables\addcontentsline{toc}{section}{Список таблиц}
+
+% Источники в "Газовой промышленности" нумеруются по мере упоминания 
+\begin{thebibliography}{99}\addcontentsline{toc}{section}{Список литературы}	
+	\bibitem{geron:ml-2018}{\emph{Жерон, О.} Прикладное машинное обучение с помощью Scikit-Learn и TensorFlow: концепции, инструменты и техники для создания интеллектуальных систем. -- СПб.: ООО <<Альфа-книга>>, 2018. -- 688 с.}
+	
+	\bibitem{soenen:effect-hyper-param-tuning:2021}{\emph{Soenen J. etc.} The Effect of Hyperparameter Tuning on the Comparative Evaluation of Unsupervised Anomaly Detection Methods, 2021}
+\end{thebibliography}
+
+\end{document}
