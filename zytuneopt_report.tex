@@ -41,7 +41,7 @@
 	
 	\item количество целочисленных переменных до пресолвинга (\verb|n_int_vars_before_presolving|, \verb|<int>|),
 	
-	\item количество вещественных переменных до пресолвинга (\verb|n_cont_vars_before_presolving|, \verb|<int>|),
+	\item количество переменных до пресолвинга (\verb|n_vars_before_presolving|, \verb|<int>|),
 	
 	\item количество ограничений до пресолвинга (\verb|n_conss_before_presolving|, \verb|<int>|),
 	
@@ -49,19 +49,19 @@
 	
 	\item количество целочисленных переменных после пресолвинга (\verb|n_int_vars_after_presolving|, \verb|<int>|),
 	
-	\item количество вещественных переменных после пресолвинга (\verb|n_cont_vars_after_presolving|, \verb|<int>|),
+	\item количество переменных после пресолвинга (\verb|n_vars_after_presolving|, \verb|<int>|),
 	
 	\item количество ограничений после пресолвинга (\verb|n_conss_after_presolving|, \verb|<int>|),
 	
-	\item группа гиперпараметров снижения размерности задачи (\verb|group_presolving|, \verb|<string>|); допустимые значения \verb|default|, \verb|aggressive| и \verb|fast|,
+	\item группа гиперпараметров снижения размерности задачи (\verb|group_presolving_method_name|, \verb|<string>|); допустимые значения \verb|default|, \verb|aggressive| и \verb|fast|,
 	
-	\item группа гиперпараметров решения проблемы в релаксированной постановке (\verb|group_relax_method|, \verb|<string>|); допустимые значения \verb|simplex|, \verb|primal_simplex|, \verb|dual_simplex|, \verb|barrier|,
+	\item группа гиперпараметров решения проблемы в \\релаксированной постановке (\verb|group_relax_method_name|, \verb|<string>|); допустимые значения \verb|simplex|, \verb|primal_simplex|, \verb|dual_simplex|, \verb|barrier|,
 	
-	\item группа гиперпараметров ветвления и разрешения конфликтов по бинарным переменным (\verb|group_preferbinary|, \verb|<bool>|); допустмые значения: \verb|TRUE| или \verb|FALSE|,
+	\item группа гиперпараметров ветвления и разрешения конфликтов по бинарным переменным (\verb|group_preferbinary_flag|, \verb|<bool>|); допустмые значения: \verb|TRUE| или \verb|FALSE|,
 	
-	\item группа гиперпараметров адаптации проблемы (\verb|group_adaptation_problem|, \verb|<string>|); допустимые значения: \verb|easycip|, \verb|feasibility|, \verb|optimality|, \verb|hardlp|, \verb|numerics|, \verb|off|,
+	\item группа гиперпараметров адаптации проблемы (\verb|group_adaptation_method_name|, \verb|<string>|); допустимые значения: \verb|easycip|, \verb|feasibility|, \verb|optimality|, \verb|hardlp|, \verb|numerics|, \verb|default|,
 	
-	\item группа гиперпараметров снижения точности решения (\verb|group_reduced_tol|, \verb|<bool>|); допустимые значения: \verb|TRUE| или \verb|FALSE|,
+	\item группа гиперпараметров снижения точности решения (\verb|group_reduced_tol_flag|, \verb|<bool>|); допустимые значения: \verb|TRUE| или \verb|FALSE|,
 	
 	\item полное время расчета (\verb|total_time|, \verb|<float>|),
 	
@@ -70,7 +70,7 @@
 	\item значение зазора (\verb|gap|, \verb|<float>|).
 \end{enumerate}
 
-Таким образом, получается 288 комбинаций значений гиперпараметров для одной стратегии поиска решения (для машины с 4 физическими ядрами, одной стратегии поиска решения и средней продолжительности работы решателя на одной проблеме 1 минута, время работы модуля составляет 72 минуты).
+Таким образом, получается 240 комбинаций значений гиперпараметров для одной стратегии поиска решения.
 
 На базе получившейся сводной таблицы можно собрать финальную метаконфигурацию решателя и применить ее к другим проблемам рассматриваемого семейства.
 
@@ -496,6 +496,14 @@ numerics/sumepsilon = 1e-05
 \remark{
 Как показывают вычислительные эксперименты на проблемах с <<короткой итерацией>> поиск подгруппы первичных эвристик низкой эффективности не дает ощутмого прироста, а в большинстве случаев значительно снижает производительность. По этой причине первичные эвристики не принимают участи в подборе метаконфигурации решателя
 }
+
+\section{Результаты вычислительных экспериментов \\на проблемах MIPLIB~2017}
+
+\subsection{Проблема \texttt{10teams.mps}}
+
+\subsection{Проблема \texttt{h80x6320.mps}}
+
+\subsection{Проблема \texttt{air05.mps}}
 
 
 
